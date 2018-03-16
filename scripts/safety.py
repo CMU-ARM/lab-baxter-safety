@@ -85,7 +85,6 @@ class SafetyNode(object):
                 if self._last_jointstate.name[i] in _constraint_joints:
                     if np.abs(vel) > 1.5:
                         self._kill_flag = True
-            print(np.max(self._last_jointstate.velocity))
         else:
             rospy.logwarn('SAFETY not RECEIVING JOINT STATES')
         if self._kill_flag:

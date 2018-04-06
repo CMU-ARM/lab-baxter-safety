@@ -80,9 +80,10 @@ class SafetyNode(object):
             return
 
         if self._last_jointstate != None:
-            for i, vel in enumerate(self._last_jointstate.velocity):
+            jointstate = self._last_jointstate
+            for i, vel in enumerate(jointstate.velocity):
                 #only make sure the bigger joints aren't moving too fast
-                if self._last_jointstate.name[i] in _constraint_joints:
+                if jointstate.name[i] in _constraint_joints:
                     if np.abs(vel) > 1.5:
                         self._kill_flag = True
         else:
@@ -113,6 +114,15 @@ class SafetyNode(object):
 
 if __name__ == '__main__':
     rospy.init_node('safety_node')
-    sn = SafetyNode()
-    rospy.loginfo("Safety Node Start Running")
-    sn.spin()
+    _estop_pub = rospy.Publisher('/robot/set_super_stop',Empty,queue_size=2)
+    try:
+        sn = SafetyNode()
+        rospy.loginfo("Safety Node Start Running")
+        sn.spin()
+    except:
+        #seriously, this shouldn't be happening. estop just in case!!!
+        r = rospy.Rate(10)
+        rospy.logerr("UNKNOWN ERROR!!!! SAFETY MODULE HAVING EXCEPTIONS!!!!")
+        while True:
+            _estop_pub.publish()
+            r.sleep()

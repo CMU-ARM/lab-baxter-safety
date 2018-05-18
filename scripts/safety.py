@@ -68,10 +68,11 @@ class SafetyNode(object):
 	        if getattr(left_orientation, i) > params["endpoint_orientation"]["left"][i]["max"]:
 		    print("Left endpoint coord/orient/max", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["max"])
 		    self._kill_flag = True	
-                if params["endpoint_orientation"]["left"][i]["min"] == None:
+	    for j in _orientations:
+                if params["endpoint_orientation"]["left"][j]["min"] == None:
                     continue
-                if getattr(left_orientation, i) < params["endpoint_orientation"]["left"][i]["min"]:
-                    print("Left endpoint coord/orient/min", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["min"])
+                if getattr(left_orientation, j) < params["endpoint_orientation"]["left"][j]["min"]:
+                    print("Left endpoint coord/orient/min", j, getattr(left_orientation, j), params["endpoint_orientation"]["left"][j]["min"])
                     self._kill_flag = True
 
         else:
@@ -86,10 +87,11 @@ class SafetyNode(object):
                 if getattr(right_orientation, i) > params["endpoint_orientation"]["right"][i]["max"]:
 		    print("Right endpoint coord/orient/max", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["max"])
                     self._kill_flag = True	
-                if params["endpoint_orientation"]["right"][i]["min"] == None:
+	    for j in _orientations:
+                if params["endpoint_orientation"]["right"][j]["min"] == None:
                     continue
-                if getattr(right_orientation, i) < params["endpoint_orientation"]["right"][i]["min"]:
-                    print("Right endpoint coord/orient/min", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["min"])
+                if getattr(right_orientation, j) < params["endpoint_orientation"]["right"][j]["min"]:
+                    print("Right endpoint coord/orient/min", j, getattr(right_orientation, j), params["endpoint_orientation"]["right"][j]["min"])
                     self._kill_flag = True 
         else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT ORIENTATION')
@@ -111,10 +113,11 @@ class SafetyNode(object):
 		if getattr(left_position, i) > params["endpoint_position"]["left"][i]["max"]:
 		    print("Left endpoint coord/pos/max", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["max"])
 		    self._kill_flag = True
-		if params["endpoint_position"]["left"][i]["min"] == None:
+	    for j in _coordinates:
+		if params["endpoint_position"]["left"][j]["min"] == None:
                     continue
-                if getattr(left_position, i) < params["endpoint_position"]["left"][i]["min"]:
-                    print("Left endpoint coord/pos/min", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["min"])
+                if getattr(left_position, j) < params["endpoint_position"]["left"][j]["min"]:
+                    print("Left endpoint coord/pos/min", j, getattr(left_position, j), params["endpoint_position"]["left"][j]["min"])
                     self._kill_flag = True
 
         else:
@@ -128,11 +131,12 @@ class SafetyNode(object):
 		    continue
                 if getattr(right_position, i) > params["endpoint_position"]["right"][i]["max"]:
 		    print("Right endpoint coord/pos/max", i, getattr(right_position, i), params["endpoint_position"]["right"][i]["max"])
-                    self._kill_flag = True	
-                if params["endpoint_position"]["right"][i]["min"] == None:
+                    self._kill_flag = True
+	    for j in _coordinates:
+                if params["endpoint_position"]["right"][j]["min"] == None:
                     continue
-                if getattr(right_position, i) < params["endpoint_position"]["right"][i]["min"]:
-                    print("Right endpoint coord/pos/min", i, getattr(right_position, i), params["endpoint_position"]["right"][i]["min"])
+                if getattr(right_position, j) < params["endpoint_position"]["right"][j]["min"]:
+                    print("Right endpoint coord/pos/min", j, getattr(right_position, j), params["endpoint_position"]["right"][j]["min"])
                     self._kill_flag = True  
         else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT POSITION')
@@ -147,10 +151,12 @@ class SafetyNode(object):
                     if pos > params["joint_position"][jointstate.name[i]]["max"]:
                         print("Joint name/pos/max", jointstate.name[i], pos, params["joint_position"][jointstate.name[i]]["max"])
                         self._kill_flag = True
-                    if params["joint_position"][jointstate.name[i]]["min"] == None:
+	    for j, pos in enumerate(jointstate.position):
+		if jointstate.name[j] in _joints:
+                    if params["joint_position"][jointstate.name[j]]["min"] == None:
                         continue
-                    if pos < params["joint_position"][jointstate.name[i]]["min"]:
-                        print("Joint name/pos/min", jointstate.name[i], pos, params["joint_position"][jointstate.name[i]]["min"])
+                    if pos < params["joint_position"][jointstate.name[j]]["min"]:
+                        print("Joint name/pos/min", jointstate.name[j], pos, params["joint_position"][jointstate.name[j]]["min"])
                         self._kill_flag = True
 
         else:
@@ -174,11 +180,11 @@ class SafetyNode(object):
 		    print("Left angular coord/vel/max", i, np.abs(getattr(left_angular, i)), params["endpoint_velocity"]["left"]["angular"][i])
 		    self._kill_flag = True
             left_linear = self._last_left_endpoint.twist.linear
-            for i in _coordinates:
-		if params["endpoint_velocity"]["left"]["linear"][i] == None:
+            for j in _coordinates:
+		if params["endpoint_velocity"]["left"]["linear"][j] == None:
 		    continue
-                if np.abs(getattr(left_linear, i)) > params["endpoint_velocity"]["left"]["linear"][i]:
-		    print("Left linear coord/vel/max", i, np.abs(getattr(left_linear, i)), params["endpoint_velocity"]["left"]["linear"][i])
+                if np.abs(getattr(left_linear, j)) > params["endpoint_velocity"]["left"]["linear"][j]:
+		    print("Left linear coord/vel/max", j, np.abs(getattr(left_linear, j)), params["endpoint_velocity"]["left"]["linear"][j])
                     self._kill_flag = True
 	else:
             rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT VELOCITY')
@@ -193,11 +199,11 @@ class SafetyNode(object):
 		    print("Right angular coord/vel/max", i, np.abs(getattr(right_angular, i)), params["endpoint_velocity"]["right"]["angular"][i])
                     self._kill_flag = True
             right_linear = self._last_right_endpoint.twist.linear
-            for i in _coordinates:
-		if params["endpoint_velocity"]["right"]["linear"][i] == None:
+            for j in _coordinates:
+		if params["endpoint_velocity"]["right"]["linear"][j] == None:
 		    continue
-                if np.abs(getattr(right_linear, i)) > params["endpoint_velocity"]["right"]["linear"][i]:
-                    print("Right linear coord/vel/max", i, np.abs(getattr(right_linear, i)), params["endpoint_velocity"]["right"]["linear"][i])
+                if np.abs(getattr(right_linear, j)) > params["endpoint_velocity"]["right"]["linear"][j]:
+                    print("Right linear coord/vel/max", j, np.abs(getattr(right_linear, j)), params["endpoint_velocity"]["right"]["linear"][j])
 		    self._kill_flag = True
 	else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT VELOCITY')

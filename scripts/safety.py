@@ -91,6 +91,7 @@ class SafetyNode(object):
 		if params["endpoint_orientation"]["left"][i]["max"] == None or params["endpoint_orientation"]["left"][i]["min"] == None:
 		    continue
 	        if getattr(left_orientation, i) > params["endpoint_orientation"]["left"][i]["max"] or getattr(left_orientation, i) < params["endpoint_orientation"]["left"][i]["min"]:
+		    print("Left endpoint coord/orient/max/min", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["max"], params["endpoint_orientation"]["left"][i]["min"])
 		    self._kill_flag = True	
         else:
             rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT ORIENTATION')
@@ -102,6 +103,7 @@ class SafetyNode(object):
 		if params["endpoint_orientation"]["right"][i]["max"] == None or params["endpoint_orientation"]["right"][i]["min"] == None:
 		    continue
                 if getattr(right_orientation, i) > params["endpoint_orientation"]["right"][i]["max"] or getattr(right_orientation, i) < params["endpoint_orientation"]["right"][i]["min"]:
+		    print("Right endpoint coord/orient/max/min", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["max"], params["endpoint_orientation"]["right"][i]["min"])
                     self._kill_flag = True	
         else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT ORIENTATION')

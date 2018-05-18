@@ -1,0 +1,45 @@
+endpoint_orientation:
+  left:
+    w: {max: , min: }
+    x: {max: , min: }
+    y: {max: , min: }
+    z: {max: , min: }
+  right:
+    w: {max: , min: }
+    x: {max: , min: }
+    y: {max: , min: }
+    z: {max: , min: }
+endpoint_position:
+  left:
+    x: {max: , min: }
+    y: {max: , min: }
+    z: {max: 0.9, min: -0.5}
+  right:
+    x: {max: , min: }
+    y: {max: , min: }
+    z: {max: 0.9, min: -0.5}
+endpoint_velocity:
+  left:
+    angular: {x: , y: , z: }
+    linear: {x: , y: , z: }
+  right:
+    angular: {x: , y: , z: }
+    linear: {x: , y: , z: }
+joint_position:
+  left_e0: {max: , min: }
+  left_e1: {max: , min: }
+  left_s0: {max: , min: }
+  left_s1: {max: , min: }
+  left_w0: {max: , min: }
+  left_w1: {max: , min: }
+  left_w2: {max: , min: }
+  right_e0: {max: , min: }
+  right_e1: {max: , min: }
+  right_s0: {max: , min: }
+  right_s1: {max: , min: }
+  right_w0: {max: , min: }
+  right_w1: {max: , min: }
+  right_w2: {max: , min: }
+joint_velocity: {left_e0: , left_e1: , left_s0: , left_s1: , left_w0: , left_w1: ,
+  left_w2: , right_e0: , right_e1: , right_s0: , right_s1: , right_w0: , right_w1: ,
+  right_w2: }

@@ -1,24 +1,23 @@
-# every max entered must have a corresponding min
 endpoint_orientation:
   left:
-    w: {max: 1, min: -1.0}
-    x: {max: 1, min: -1.0}
-    y: {max: 1, min: -0.3}
-    z: {max: 0.3, min: -0.6}
+    w: {max: , min: }
+    x: {max: , min: }
+    y: {max: , min: }
+    z: {max: , min: }
   right:
-    w: {max: 1, min: -1.0}
-    x: {max: 1, min: -1.0}
-    y: {max: 1, min: -0.3}
-    z: {max: 0.3, min: -0.6}
+    w: {max: , min: }
+    x: {max: , min: }
+    y: {max: , min: }
+    z: {max: , min: }
 endpoint_position:
   left:
     x: {max: , min: }
     y: {max: , min: }
-    z: {max: 0.9, min: -0.5}
+    z: {max: 0.9, min: }
   right:
     x: {max: , min: }
     y: {max: , min: }
-    z: {max: 0.9, min: -0.5}
+    z: {max: 0.9, min: }
 endpoint_velocity:
   left:
     angular: {x: , y: , z: }

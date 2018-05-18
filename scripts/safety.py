@@ -63,11 +63,17 @@ class SafetyNode(object):
 	if self._last_left_endpoint != None:
             left_orientation = self._last_left_endpoint.pose.orientation
 	    for i in _orientations:
-		if params["endpoint_orientation"]["left"][i]["max"] == None or params["endpoint_orientation"]["left"][i]["min"] == None:
+		if params["endpoint_orientation"]["left"][i]["max"] == None:
 		    continue
-	        if getattr(left_orientation, i) > params["endpoint_orientation"]["left"][i]["max"] or getattr(left_orientation, i) < params["endpoint_orientation"]["left"][i]["min"]:
-		    print("Left endpoint coord/orient/max/min", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["max"], params["endpoint_orientation"]["left"][i]["min"])
+	        if getattr(left_orientation, i) > params["endpoint_orientation"]["left"][i]["max"]:
+		    print("Left endpoint coord/orient/max", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["max"])
 		    self._kill_flag = True	
+                if params["endpoint_orientation"]["left"][i]["min"] == None:
+                    continue
+                if getattr(left_orientation, i) < params["endpoint_orientation"]["left"][i]["min"]:
+                    print("Left endpoint coord/orient/min", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["min"])
+                    self._kill_flag = True
+
         else:
             rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT ORIENTATION')
 
@@ -75,11 +81,16 @@ class SafetyNode(object):
 	if self._last_right_endpoint != None:
 	    right_orientation = self._last_right_endpoint.pose.orientation
             for i in _orientations:
-		if params["endpoint_orientation"]["right"][i]["max"] == None or params["endpoint_orientation"]["right"][i]["min"] == None:
+		if params["endpoint_orientation"]["right"][i]["max"] == None:
 		    continue
-                if getattr(right_orientation, i) > params["endpoint_orientation"]["right"][i]["max"] or getattr(right_orientation, i) < params["endpoint_orientation"]["right"][i]["min"]:
-		    print("Right endpoint coord/orient/max/min", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["max"], params["endpoint_orientation"]["right"][i]["min"])
+                if getattr(right_orientation, i) > params["endpoint_orientation"]["right"][i]["max"]:
+		    print("Right endpoint coord/orient/max", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["max"])
                     self._kill_flag = True	
+                if params["endpoint_orientation"]["right"][i]["min"] == None:
+                    continue
+                if getattr(right_orientation, i) < params["endpoint_orientation"]["right"][i]["min"]:
+                    print("Right endpoint coord/orient/min", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["min"])
+                    self._kill_flag = True 
         else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT ORIENTATION')
 
@@ -95,11 +106,17 @@ class SafetyNode(object):
         if self._last_left_endpoint != None:
 	    left_position = self._last_left_endpoint.pose.position
 	    for i in _coordinates:
-		if params["endpoint_position"]["left"][i]["max"] == None  or params["endpoint_position"]["left"][i]["min"] == None:
+		if params["endpoint_position"]["left"][i]["max"] == None:
 		    continue
-		if getattr(left_position, i) > params["endpoint_position"]["left"][i]["max"] or getattr(left_position, i) < params["endpoint_position"]["left"][i]["min"]:
-		    print("Left endpoint coord/pos/max/min", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["max"], params["endpoint_position"]["left"][i]["min"])
+		if getattr(left_position, i) > params["endpoint_position"]["left"][i]["max"]:
+		    print("Left endpoint coord/pos/max", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["max"])
 		    self._kill_flag = True
+		if params["endpoint_position"]["left"][i]["min"] == None:
+                    continue
+                if getattr(left_position, i) < params["endpoint_position"]["left"][i]["min"]:
+                    print("Left endpoint coord/pos/min", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["min"])
+                    self._kill_flag = True
+
         else:
             rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT POSITION')
 
@@ -107,11 +124,16 @@ class SafetyNode(object):
         if self._last_right_endpoint != None:
             right_position = self._last_right_endpoint.pose.position
             for i in _coordinates:
-		if params["endpoint_position"]["right"][i]["max"] == None or params["endpoint_position"]["right"][i]["min"] == None:
+		if params["endpoint_position"]["right"][i]["max"] == None:
 		    continue
-                if getattr(right_position, i) > params["endpoint_position"]["right"][i]["max"] or getattr(right_position, i) < params["endpoint_position"]["right"][i]["min"]:
-		    print("Right endpoint coord/pos/max/min", i, getattr(right_position, i), params["endpoint_position"]["right"][i]["max"], params["endpoint_position"]["right"][i]["min"])
+                if getattr(right_position, i) > params["endpoint_position"]["right"][i]["max"]:
+		    print("Right endpoint coord/pos/max", i, getattr(right_position, i), params["endpoint_position"]["right"][i]["max"])
                     self._kill_flag = True	
+                if params["endpoint_position"]["right"][i]["min"] == None:
+                    continue
+                if getattr(right_position, i) < params["endpoint_position"]["right"][i]["min"]:
+                    print("Right endpoint coord/pos/min", i, getattr(right_position, i), params["endpoint_position"]["right"][i]["min"])
+                    self._kill_flag = True  
         else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT POSITION')
 
@@ -120,11 +142,17 @@ class SafetyNode(object):
             jointstate = self._last_jointstate
             for i, pos in enumerate(jointstate.position):
                 if jointstate.name[i] in _joints:
-		    if params["joint_position"][jointstate.name[i]]["max"] == None or params["joint_position"][jointstate.name[i]]["min"] == None:
+		    if params["joint_position"][jointstate.name[i]]["max"] == None:
 			continue
-                    if pos > params["joint_position"][jointstate.name[i]]["max"] or pos < params["joint_position"][jointstate.name[i]]["min"]:
-                        print("Joint name/pos/max/min", jointstate.name[i], pos, params["joint_position"][jointstate.name[i]]["max"], params["joint_position"][jointstate.name[i]]["min"])
+                    if pos > params["joint_position"][jointstate.name[i]]["max"]:
+                        print("Joint name/pos/max", jointstate.name[i], pos, params["joint_position"][jointstate.name[i]]["max"])
                         self._kill_flag = True
+                    if params["joint_position"][jointstate.name[i]]["min"] == None:
+                        continue
+                    if pos < params["joint_position"][jointstate.name[i]]["min"]:
+                        print("Joint name/pos/min", jointstate.name[i], pos, params["joint_position"][jointstate.name[i]]["min"])
+                        self._kill_flag = True
+
         else:
             rospy.logwarn('SAFETY NOT RECEIVING JOINT POSITIONS')
        

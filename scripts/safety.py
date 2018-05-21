@@ -66,7 +66,7 @@ class SafetyNode(object):
 		# skip empty yaml file entries
 		if params["endpoint_orientation"]["left"][i]["max"] == None:
 		    continue
-		# compare values
+		# compare values to max parameters
 	        if getattr(left_orientation, i) > params["endpoint_orientation"]["left"][i]["max"]:
 		    rospy.logerr("Left endpoint, coord: %s  orient: %s  max: %s", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["max"])
 		    self._kill_flag = True	
@@ -74,7 +74,7 @@ class SafetyNode(object):
 		# skip empty yaml file entries
                 if params["endpoint_orientation"]["left"][j]["min"] == None:
                     continue
-		# compare values
+		# compare values to min parameters
                 if getattr(left_orientation, j) < params["endpoint_orientation"]["left"][j]["min"]:
                     rospy.logerr("Left endpoint, coord: %s  orient: %s  min: %s", j, getattr(left_orientation, j), params["endpoint_orientation"]["left"][j]["min"])
                     self._kill_flag = True
@@ -114,7 +114,7 @@ class SafetyNode(object):
 		# skip empty yaml file entries
 		if params["endpoint_position"]["left"][i]["max"] == None:
 		    continue
-		# compare values
+		# compare values to max parameters
 		if getattr(left_position, i) > params["endpoint_position"]["left"][i]["max"]:
 		    rospy.logerr("Left endpoint, coord: %s  pos: %s  max: %s", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["max"])
 		    self._kill_flag = True
@@ -122,7 +122,7 @@ class SafetyNode(object):
 		# skip empty yaml file entries
 		if params["endpoint_position"]["left"][j]["min"] == None:
                     continue
-		# compare values
+		# compare values to min parameters
                 if getattr(left_position, j) < params["endpoint_position"]["left"][j]["min"]:
                     rospy.logerr("Left endpoint, coord: %s  pos: %s  min: %s", j, getattr(left_position, j), params["endpoint_position"]["left"][j]["min"])
                     self._kill_flag = True
@@ -182,7 +182,7 @@ class SafetyNode(object):
 		# skip empty yaml file entries
 		if params["endpoint_velocity"]["left"]["angular"][i] == None:
 		    continue
-		# compare values
+		# compare values to max angular parameters
 	    	if np.abs(getattr(left_angular, i)) > params["endpoint_velocity"]["left"]["angular"][i]:
 		    rospy.logerr("Left angular, coord: %s  vel: %s  max: %s", i, np.abs(getattr(left_angular, i)), params["endpoint_velocity"]["left"]["angular"][i])
 		    self._kill_flag = True
@@ -191,7 +191,7 @@ class SafetyNode(object):
 		# skip empty yaml file entries
 		if params["endpoint_velocity"]["left"]["linear"][j] == None:
 		    continue
-		# compare values
+		# compare values to max linear parameters
                 if np.abs(getattr(left_linear, j)) > params["endpoint_velocity"]["left"]["linear"][j]:
 		    rospy.logerr("Left linear, coord: %s  vel: %s  max: %s", j, np.abs(getattr(left_linear, j)), params["endpoint_velocity"]["left"]["linear"][j])
                     self._kill_flag = True

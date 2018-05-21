@@ -63,18 +63,21 @@ class SafetyNode(object):
 	if self._last_left_endpoint != None:
             left_orientation = self._last_left_endpoint.pose.orientation
 	    for i in _orientations:
+		# skip empty yaml file entries
 		if params["endpoint_orientation"]["left"][i]["max"] == None:
 		    continue
+		# compare values
 	        if getattr(left_orientation, i) > params["endpoint_orientation"]["left"][i]["max"]:
-		    print("Left endpoint coord/orient/max", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["max"])
+		    rospy.logerr("Left endpoint, coord: %s  orient: %s  max: %s", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["max"])
 		    self._kill_flag = True	
 	    for j in _orientations:
+		# skip empty yaml file entries
                 if params["endpoint_orientation"]["left"][j]["min"] == None:
                     continue
+		# compare values
                 if getattr(left_orientation, j) < params["endpoint_orientation"]["left"][j]["min"]:
-                    print("Left endpoint coord/orient/min", j, getattr(left_orientation, j), params["endpoint_orientation"]["left"][j]["min"])
+                    rospy.logerr("Left endpoint, coord: %s  orient: %s  min: %s", j, getattr(left_orientation, j), params["endpoint_orientation"]["left"][j]["min"])
                     self._kill_flag = True
-
         else:
             rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT ORIENTATION')
 
@@ -85,13 +88,13 @@ class SafetyNode(object):
 		if params["endpoint_orientation"]["right"][i]["max"] == None:
 		    continue
                 if getattr(right_orientation, i) > params["endpoint_orientation"]["right"][i]["max"]:
-		    print("Right endpoint coord/orient/max", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["max"])
+		    rospy.logerr("Right endpoint, coord: %s  orient: %s  max: %s", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["max"])
                     self._kill_flag = True	
 	    for j in _orientations:
                 if params["endpoint_orientation"]["right"][j]["min"] == None:
                     continue
                 if getattr(right_orientation, j) < params["endpoint_orientation"]["right"][j]["min"]:
-                    print("Right endpoint coord/orient/min", j, getattr(right_orientation, j), params["endpoint_orientation"]["right"][j]["min"])
+                    rospy.logerr("Right endpoint, coord: %s  orient: %s  min: %s", j, getattr(right_orientation, j), params["endpoint_orientation"]["right"][j]["min"])
                     self._kill_flag = True 
         else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT ORIENTATION')
@@ -108,18 +111,21 @@ class SafetyNode(object):
         if self._last_left_endpoint != None:
 	    left_position = self._last_left_endpoint.pose.position
 	    for i in _coordinates:
+		# skip empty yaml file entries
 		if params["endpoint_position"]["left"][i]["max"] == None:
 		    continue
+		# compare values
 		if getattr(left_position, i) > params["endpoint_position"]["left"][i]["max"]:
-		    print("Left endpoint coord/pos/max", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["max"])
+		    rospy.logerr("Left endpoint, coord: %s  pos: %s  max: %s", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["max"])
 		    self._kill_flag = True
 	    for j in _coordinates:
+		# skip empty yaml file entries
 		if params["endpoint_position"]["left"][j]["min"] == None:
                     continue
+		# compare values
                 if getattr(left_position, j) < params["endpoint_position"]["left"][j]["min"]:
-                    print("Left endpoint coord/pos/min", j, getattr(left_position, j), params["endpoint_position"]["left"][j]["min"])
+                    rospy.logerr("Left endpoint, coord: %s  pos: %s  min: %s", j, getattr(left_position, j), params["endpoint_position"]["left"][j]["min"])
                     self._kill_flag = True
-
         else:
             rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT POSITION')
 
@@ -130,13 +136,13 @@ class SafetyNode(object):
 		if params["endpoint_position"]["right"][i]["max"] == None:
 		    continue
                 if getattr(right_position, i) > params["endpoint_position"]["right"][i]["max"]:
-		    print("Right endpoint coord/pos/max", i, getattr(right_position, i), params["endpoint_position"]["right"][i]["max"])
+		    rospy.logerr("Right endpoint, coord: %s  pos: %s  max: %s", i, getattr(right_position, i), params["endpoint_position"]["right"][i]["max"])
                     self._kill_flag = True
 	    for j in _coordinates:
                 if params["endpoint_position"]["right"][j]["min"] == None:
                     continue
                 if getattr(right_position, j) < params["endpoint_position"]["right"][j]["min"]:
-                    print("Right endpoint coord/pos/min", j, getattr(right_position, j), params["endpoint_position"]["right"][j]["min"])
+                    rospy.logerr("Right endpoint, coord: %s  pos %s  min: %s", j, getattr(right_position, j), params["endpoint_position"]["right"][j]["min"])
                     self._kill_flag = True  
         else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT POSITION')
@@ -149,16 +155,15 @@ class SafetyNode(object):
 		    if params["joint_position"][jointstate.name[i]]["max"] == None:
 			continue
                     if pos > params["joint_position"][jointstate.name[i]]["max"]:
-                        print("Joint name/pos/max", jointstate.name[i], pos, params["joint_position"][jointstate.name[i]]["max"])
+                        rospy.logerr("Joint, name: %s  pos: %s  max: %s", jointstate.name[i], pos, params["joint_position"][jointstate.name[i]]["max"])
                         self._kill_flag = True
 	    for j, pos in enumerate(jointstate.position):
 		if jointstate.name[j] in _joints:
                     if params["joint_position"][jointstate.name[j]]["min"] == None:
                         continue
                     if pos < params["joint_position"][jointstate.name[j]]["min"]:
-                        print("Joint name/pos/min", jointstate.name[j], pos, params["joint_position"][jointstate.name[j]]["min"])
+                        rospy.logerr("Joint, name: %s  pos: %s  min: %s", jointstate.name[j], pos, params["joint_position"][jointstate.name[j]]["min"])
                         self._kill_flag = True
-
         else:
             rospy.logwarn('SAFETY NOT RECEIVING JOINT POSITIONS')
        
@@ -174,17 +179,21 @@ class SafetyNode(object):
 	if self._last_left_endpoint != None:
 	    left_angular = self._last_left_endpoint.twist.angular
 	    for i in _coordinates:
+		# skip empty yaml file entries
 		if params["endpoint_velocity"]["left"]["angular"][i] == None:
 		    continue
+		# compare values
 	    	if np.abs(getattr(left_angular, i)) > params["endpoint_velocity"]["left"]["angular"][i]:
-		    print("Left angular coord/vel/max", i, np.abs(getattr(left_angular, i)), params["endpoint_velocity"]["left"]["angular"][i])
+		    rospy.logerr("Left angular, coord: %s  vel: %s  max: %s", i, np.abs(getattr(left_angular, i)), params["endpoint_velocity"]["left"]["angular"][i])
 		    self._kill_flag = True
             left_linear = self._last_left_endpoint.twist.linear
             for j in _coordinates:
+		# skip empty yaml file entries
 		if params["endpoint_velocity"]["left"]["linear"][j] == None:
 		    continue
+		# compare values
                 if np.abs(getattr(left_linear, j)) > params["endpoint_velocity"]["left"]["linear"][j]:
-		    print("Left linear coord/vel/max", j, np.abs(getattr(left_linear, j)), params["endpoint_velocity"]["left"]["linear"][j])
+		    rospy.logerr("Left linear, coord: %s  vel: %s  max: %s", j, np.abs(getattr(left_linear, j)), params["endpoint_velocity"]["left"]["linear"][j])
                     self._kill_flag = True
 	else:
             rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT VELOCITY')
@@ -196,14 +205,14 @@ class SafetyNode(object):
 		if params["endpoint_velocity"]["right"]["angular"][i] == None:
 		    continue     
 		if np.abs(getattr(right_angular, i)) > params["endpoint_velocity"]["right"]["angular"][i]:
-		    print("Right angular coord/vel/max", i, np.abs(getattr(right_angular, i)), params["endpoint_velocity"]["right"]["angular"][i])
+		    rospy.logerr("Right angular, coord: %s  vel: %s  max: %s", i, np.abs(getattr(right_angular, i)), params["endpoint_velocity"]["right"]["angular"][i])
                     self._kill_flag = True
             right_linear = self._last_right_endpoint.twist.linear
             for j in _coordinates:
 		if params["endpoint_velocity"]["right"]["linear"][j] == None:
 		    continue
                 if np.abs(getattr(right_linear, j)) > params["endpoint_velocity"]["right"]["linear"][j]:
-                    print("Right linear coord/vel/max", j, np.abs(getattr(right_linear, j)), params["endpoint_velocity"]["right"]["linear"][j])
+                    rospy.logerr("Right linear, coord: %s  vel: %s  max: %s", j, np.abs(getattr(right_linear, j)), params["endpoint_velocity"]["right"]["linear"][j])
 		    self._kill_flag = True
 	else:
             rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT VELOCITY')
@@ -216,7 +225,7 @@ class SafetyNode(object):
 		    if params["joint_velocity"][jointstate.name[i]] == None:
 			continue
                     if np.abs(vel) > params["joint_velocity"][jointstate.name[i]]:
-			print("Joint name/vel/max", jointstate.name[i], np.abs(vel), params["joint_velocity"][jointstate.name[i]])
+			rospy.logerr("Joint, name: %s  vel: %s  max: %s", jointstate.name[i], np.abs(vel), params["joint_velocity"][jointstate.name[i]])
                         self._kill_flag = True
         else:
             rospy.logwarn('SAFETY NOT RECEIVING JOINT VELOCITIES')
@@ -259,4 +268,3 @@ if __name__ == '__main__':
         while True:
             _estop_pub.publish()
             r.sleep()
-

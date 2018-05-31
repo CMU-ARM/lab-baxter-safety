@@ -3,6 +3,8 @@
 import yaml
 import numpy as np
 import rospy
+import os
+import rospkg
 
 from std_msgs.msg import (
     Empty
@@ -16,8 +18,11 @@ from sensor_msgs.msg import (
     JointState
 )
 
+rospack = rospkg.RosPack()
+path = os.path.join(rospack.get_path("lab_baxter_safety"), "scripts/parameters.yml")
+
 # parse parameters.yml file
-with open("parameters.yml", 'r') as stream:
+with open(path, 'r') as stream:
     try:
         params = yaml.load(stream)
     except yaml.YAMLError as exc:

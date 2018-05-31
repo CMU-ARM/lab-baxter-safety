@@ -18,6 +18,7 @@ from sensor_msgs.msg import (
     JointState
 )
 
+# make sure we can find the package and yaml file locally
 rospack = rospkg.RosPack()
 path = os.path.join(rospack.get_path("lab_baxter_safety"), "scripts/parameters.yml")
 

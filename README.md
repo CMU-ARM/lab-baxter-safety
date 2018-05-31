@@ -6,6 +6,6 @@ A node that monitors the robot's endpoint and joint orientations, velocities, an
 To edit the safety parameters, see the parameters.yml file in the scripts folder
 
 ### Running Safety Node
-'''
+```
 rosrun lab_baxter_safety safety.py
-'''
+```

@@ -3,6 +3,8 @@
 import yaml
 import numpy as np
 import rospy
+import os
+import rospkg
 
 from std_msgs.msg import (
     Empty
@@ -16,8 +18,12 @@ from sensor_msgs.msg import (
     JointState
 )
 
+# make sure we can find the parameters file independent of file system
+rospack = rospkg.RosPack()
+path = os.path.join(rospack.get_path("lab_baxter_safety"), "scripts/parameters.yml")
+
 # parse parameters.yml file
-with open("parameters.yml", 'r') as stream:
+with open(path, 'r') as stream:
     try:
         params = yaml.load(stream)
     except yaml.YAMLError as exc:
@@ -26,6 +32,7 @@ with open("parameters.yml", 'r') as stream:
 _joints = ['left_s0','left_s1','left_e0','left_e1','left_w0','left_w1','left_w2','right_s0','right_s1','right_e0','right_e1','right_w0','right_w1','right_w2']
 _coordinates = ['x', 'y', 'z']
 _orientations = ['x', 'y', 'z', 'w']
+
 
 class SafetyNode(object):
     # monitor the robot and make sure it follows certain constraints,

@@ -3,7 +3,7 @@ A node that monitors the robot's endpoint and joint orientations, velocities, an
 
 ## Usage
 ### Editing Parameters
-To edit the safety parameters, see the parameters.yml file in the scripts folder
+To edit the safety parameters, see the parameters.yml file
 
 ### Running Safety Node
 ```

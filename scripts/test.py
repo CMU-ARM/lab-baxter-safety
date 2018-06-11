@@ -40,50 +40,51 @@ def shouldSkip():
 class SafetyTests(unittest.TestCase):
 
     def test_1(self):
-	pass
-	right.move_to_joint_positions(rtest_1)
-	rospy.sleep(1.5)
+	    right.move_to_joint_positions(rtest_1)
+	    rospy.sleep(1.5)
 	if rs.state().enabled:
 	    rs.disable()
 	    rospy.logerr("Baxter failed to kill in invalid condition! Aborting...")
 	    self.skipTest("Baxter failed to kill in invalid condition! Aborting...")
+	rs.enable()
 
     def test_2(self):
-	pass
-	rospy.sleep(5)
-	if shouldSkip():
-	    self.skipTest("Previous test failed")
-	right.move_to_joint_positions(rtest_2)
-	rospy.sleep(1.5)
-	if rs.state().enabled:
-	    rs.disable()
-	    rospy.logerr("Baxter failed to kill in invalid condition! Aborting...")
-	    self.skipTest("Baxter failed to kill in invalid condition! Aborting...")
-
+	    rospy.sleep(3)
+	    if shouldSkip():
+	        self.skipTest("Previous test failed")
+	    right.move_to_joint_positions(rtest_2)
+	    rospy.sleep(1.5)
+	    if rs.state().enabled:
+	        rs.disable()
+	        rospy.logerr("Baxter failed to kill in invalid condition! Aborting...")
+	        self.skipTest("Baxter failed to kill in invalid condition! Aborting...")
+        rs.enable()
+        
     def test_3(self):
-	rospy.sleep(5)
-	if shouldSkip():
-	    self.skipTest("Previous test failed")
-	right.move_to_joint_positions(rstart)
-	right.move_to_joint_positions(rtest_3)
-	rospy.sleep(5)
-	if rs.state().enabled:
-	    rs.disable()
-	    rospy.logerr("Baxter failed to kill in invalid condition! Aborting...")
-	    self.skipTest("Baxter failed to kill in invalid condition! Aborting...")
+	    rospy.sleep(3)
+	    if shouldSkip():
+	        self.skipTest("Previous test failed")
+	    right.move_to_joint_positions(rstart)
+	    right.move_to_joint_positions(rtest_3)
+	    rospy.sleep(1.5)
+	    if rs.state().enabled:
+	        rs.disable()
+	        rospy.logerr("Baxter failed to kill in invalid condition! Aborting...")
+	        self.skipTest("Baxter failed to kill in invalid condition! Aborting...")
+	    rs.enable()
     
     def test_4(self):
-	pass
+    rospy.sleep(3)
 	left.move_to_joint_positions(ltest_1)
 	rospy.sleep(1.5)
 	if rs.state().enabled:
 	    rs.disable()
 	    rospy.logerr("Baxter failed to kill in invalid condition! Aborting...")
 	    self.skipTest("Baxter failed to kill in invalid condition! Aborting...")
+	rs.enable()
 
     def test_5(self):
-	pass
-	rospy.sleep(5)
+	rospy.sleep(3)
 	if shouldSkip():
 	    self.skipTest("Previous test failed")
 	left.move_to_joint_positions(ltest_2)
@@ -92,18 +93,20 @@ class SafetyTests(unittest.TestCase):
 	    rs.disable()
 	    rospy.logerr("Baxter failed to kill in invalid condition! Aborting...")
 	    self.skipTest("Baxter failed to kill in invalid condition! Aborting...")
+	rs.enable()
 
     def test_6(self):
-	rospy.sleep(5)
+	rospy.sleep(3)
 	if shouldSkip():
 	    self.skipTest("Previous test failed")
 	left.move_to_joint_positions(lstart)
 	left.move_to_joint_positions(ltest_3)
-	rospy.sleep(5)
+	rospy.sleep(1.5)
 	if rs.state().enabled:
 	    rs.disable()
 	    rospy.logerr("Baxter failed to kill in invalid condition! Aborting...")
 	    self.skipTest("Baxter failed to kill in invalid condition! Aborting...")
+	rs.enable()
 
 if __name__ == '__main__':
     rospy.init_node("test")

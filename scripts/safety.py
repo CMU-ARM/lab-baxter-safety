@@ -258,10 +258,6 @@ class SafetyNode(object):
             if self._kill_flag:
                 self.kill()
                 rs.disable()
-    	        rospy.sleep(5)
-		rs.reset()
-	        rs.enable()
-		self._kill_flag = False
 	        #return
 	    self._spin_rate_control.sleep()
 

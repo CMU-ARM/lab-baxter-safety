@@ -17,6 +17,8 @@ from baxter_core_msgs.msg import (
 from sensor_msgs.msg import (
     JointState
 )
+from baxter_interface import RobotEnable
+
 
 # make sure we can find the package and yaml file locally
 rospack = rospkg.RosPack()
@@ -33,6 +35,7 @@ _joints = ['left_s0','left_s1','left_e0','left_e1','left_w0','left_w1','left_w2'
 _coordinates = ['x', 'y', 'z']
 _orientations = ['x', 'y', 'z', 'w']
 
+
 class SafetyNode(object):
     # monitor the robot and make sure it follows certain constraints,
     # if these constratins are violated, the robot shuts down
@@ -43,9 +46,9 @@ class SafetyNode(object):
         self._spin_rate_control = rospy.Rate(self._spin_rate)
         self._kill_flag = False
 
-        self._left_endpoint_sub = rospy.Subscriber('/robot/limb/left/endpoint_state', EndpointState,self. _left_endpoint_cb, queue_size=1)
-        self._right_endpoint_sub = rospy.Subscriber('/robot/limb/right/endpoint_state', EndpointState,self._right_endpoint_cb, queue_size=1)
-        self._jointstate_sub = rospy.Subscriber('/robot/joint_states', JointState,self._jointstate_cb, queue_size=1)
+        self._left_endpoint_sub = rospy.Subscriber('/robot/limb/left/endpoint_state', EndpointState, self._left_endpoint_cb, queue_size=1)
+        self._right_endpoint_sub = rospy.Subscriber('/robot/limb/right/endpoint_state', EndpointState, self._right_endpoint_cb, queue_size=1)
+        self._jointstate_sub = rospy.Subscriber('/robot/joint_states', JointState, self._jointstate_cb, queue_size=1)
 
         self._last_left_endpoint = None
         self._last_right_endpoint = None
@@ -115,6 +118,7 @@ class SafetyNode(object):
 
 	# check if left endpoint position is valid
         if self._last_left_endpoint != None:
+	    jointstate = self._last_jointstate
 	    left_position = self._last_left_endpoint.pose.position
 	    for i in _coordinates:
 		# skip empty yaml file entries
@@ -137,6 +141,7 @@ class SafetyNode(object):
 
 	# check if right endpoint position is valid
         if self._last_right_endpoint != None:
+	    jointstate = self._last_jointstate
             right_position = self._last_right_endpoint.pose.position
             for i in _coordinates:
 		if params["endpoint_position"]["right"][i]["max"] == None:
@@ -252,8 +257,9 @@ class SafetyNode(object):
             # Step 2: check if robot should kill
             if self._kill_flag:
                 self.kill()
-
-            self._spin_rate_control.sleep()
+                rs.disable()
+	        #return
+	    self._spin_rate_control.sleep()
 
     def kill(self):
         # send the kill commands
@@ -262,9 +268,10 @@ class SafetyNode(object):
 
 if __name__ == '__main__':
     rospy.init_node('safety_node')
-    _estop_pub = rospy.Publisher('/robot/set_super_stop', Empty,queue_size=2)
+    _estop_pub = rospy.Publisher('/robot/set_super_stop', Empty, queue_size=2)
     try:
         sn = SafetyNode()
+	rs = RobotEnable()
         rospy.loginfo("Safety Node Start Running")
         sn.spin()
     except:

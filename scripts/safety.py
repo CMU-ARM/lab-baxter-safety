@@ -17,8 +17,12 @@ from baxter_core_msgs.msg import (
 from sensor_msgs.msg import (
     JointState
 )
-from baxter_interface import RobotEnable
 
+from lab_baxter_safety.msg import (
+    Safety
+)
+
+from baxter_interface import RobotEnable
 
 # make sure we can find the package and yaml file locally
 rospack = rospkg.RosPack()
@@ -245,21 +249,32 @@ class SafetyNode(object):
             rospy.logerr('SAFETY VIOLATED! VELOCITY VIOLATED')
 
     def _check_constraints(self):
-	self._orientation_constraints()
+        last_safety.running = True
+        safety_pub.publish(last_safety)
+        self._orientation_constraints()
         self._position_constraints()
         self._velocity_constraints()
 
+    def handler(self):
+        last_safety.running = False
+        safety_pub.publish(last_safety)
+        
     def spin(self):
         # our spin loop
         while not rospy.is_shutdown():
+            
+            safety_pub.publish(last_safety)
             # Step 1: check constraints
             self._check_constraints()
             # Step 2: check if robot should kill
             if self._kill_flag:
+                last_safety.kill_flag = True
+                safety_pub.publish(last_safety)
                 self.kill()
                 rs.disable()
 	        #return
 	    self._spin_rate_control.sleep()
+	    rospy.on_shutdown(self.handler)
 
     def kill(self):
         # send the kill commands
@@ -269,12 +284,19 @@ class SafetyNode(object):
 if __name__ == '__main__':
     rospy.init_node('safety_node')
     _estop_pub = rospy.Publisher('/robot/set_super_stop', Empty, queue_size=2)
+    safety_pub = rospy.Publisher('/safety', Safety, queue_size=2)
+    last_safety = Safety()
+    last_safety.running = False
+    last_safety.kill_flag = False
+    
     try:
         sn = SafetyNode()
-	rs = RobotEnable()
+        rs = RobotEnable()
         rospy.loginfo("Safety Node Start Running")
         sn.spin()
     except:
+        last_safety.running = False
+        safety_pub.publish(last_safety)
         # seriously, this shouldn't be happening. estop just in case!!!
         r = rospy.Rate(10)
         rospy.logerr("UNKNOWN ERROR!!!! SAFETY MODULE HAVING EXCEPTIONS!!!!")

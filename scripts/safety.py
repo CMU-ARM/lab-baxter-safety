@@ -5,23 +5,9 @@ import numpy as np
 import rospy
 import os
 import rospkg
-
-from std_msgs.msg import (
-    Empty
-)
-
-from baxter_core_msgs.msg import (
-    EndpointState
-)
-
-from sensor_msgs.msg import (
-    JointState
-)
-
-from lab_baxter_safety.msg import (
-    Safety
-)
-
+from std_msgs.msg import Empty, Bool
+from baxter_core_msgs.msg import EndpointState
+from sensor_msgs.msg import JointState
 from baxter_interface import RobotEnable
 
 # make sure we can find the package and yaml file locally
@@ -249,14 +235,14 @@ class SafetyNode(object):
             rospy.logerr('SAFETY VIOLATED! VELOCITY VIOLATED')
 
     def _check_constraints(self):
-        last_safety.running = True
+        last_safety.data = True
         safety_pub.publish(last_safety)
         self._orientation_constraints()
         self._position_constraints()
         self._velocity_constraints()
 
     def handler(self):
-        last_safety.running = False
+        last_safety.data = False
         safety_pub.publish(last_safety)
         
     def spin(self):
@@ -268,11 +254,8 @@ class SafetyNode(object):
             self._check_constraints()
             # Step 2: check if robot should kill
             if self._kill_flag:
-                last_safety.kill_flag = True
-                safety_pub.publish(last_safety)
                 self.kill()
                 rs.disable()
-	        #return
 	    self._spin_rate_control.sleep()
 	    rospy.on_shutdown(self.handler)
 
@@ -284,10 +267,9 @@ class SafetyNode(object):
 if __name__ == '__main__':
     rospy.init_node('safety_node')
     _estop_pub = rospy.Publisher('/robot/set_super_stop', Empty, queue_size=2)
-    safety_pub = rospy.Publisher('/safety', Safety, queue_size=2)
-    last_safety = Safety()
-    last_safety.running = False
-    last_safety.kill_flag = False
+    safety_pub = rospy.Publisher('/safety', Bool, queue_size=2)
+    last_safety = Bool()
+    last_safety.data = False
     
     try:
         sn = SafetyNode()
@@ -295,7 +277,7 @@ if __name__ == '__main__':
         rospy.loginfo("Safety Node Start Running")
         sn.spin()
     except:
-        last_safety.running = False
+        last_safety.data = False
         safety_pub.publish(last_safety)
         # seriously, this shouldn't be happening. estop just in case!!!
         r = rospy.Rate(10)

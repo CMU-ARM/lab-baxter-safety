@@ -271,7 +271,6 @@ if __name__ == '__main__':
     _estop_pub = rospy.Publisher('/robot/set_super_stop', Empty, queue_size=2)
     try:
         sn = SafetyNode()
-	rs = RobotEnable()
         rospy.loginfo("Safety Node Start Running")
         sn.spin()
     except:

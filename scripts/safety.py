@@ -79,7 +79,7 @@ class SafetyNode(object):
                                 self._kill_flag = True	
                                 break
             else:
-                rospy.logwarn('SAFETY NOT RECEIVING ENDPOINT INFORMATION')
+                rospy.logdebug('SAFETY NOT RECEIVING ENDPOINT INFORMATION')
 
         if self._kill_flag:
             rospy.logerr('SAFETY VIOLATED! ENDPOINT CONSTRAINT VIOLATED')
@@ -113,7 +113,7 @@ class SafetyNode(object):
                                      self._params["joint_velocity"][jointstate.name[i]])
                         self._kill_flag = True
         else:
-            rospy.logwarn('SAFETY NOT RECEIVING JOINT INFORMATION')
+            rospy.logdebug('SAFETY NOT RECEIVING JOINT INFORMATION')
 
         if self._kill_flag:
             rospy.logerr('SAFETY VIOLATED! JOINT CONSTRAINT VIOLATED')

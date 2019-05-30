@@ -5,7 +5,7 @@ import numpy as np
 import rospy
 import os
 import rospkg
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty, Bool
 from baxter_core_msgs.msg import EndpointState
 from sensor_msgs.msg import JointState
 from baxter_interface import RobotEnable
@@ -27,22 +27,23 @@ class SafetyNode(object):
             except yaml.YAMLError as exc:
                 rospy.logerr(exc)
 
-        self._estop_pub = rospy.Publisher('/robot/set_super_stop', Empty,queue_size=2)
-        self._spin_rate_control = rospy.Rate(10)
-        self._kill_flag = False
-
-        self._joints = ['left_s0','left_s1','left_e0','left_e1','left_w0','left_w1','left_w2','right_s0','right_s1','right_e0','right_e1','right_w0','right_w1','right_w2']
-        self._coordinates = ['x', 'y', 'z']
-        self._orientations = ['x', 'y', 'z', 'w']
-
+        self._estop_pub = rospy.Publisher('/robot/set_super_stop', Empty, queue_size=2)
+        self._safety_pub = rospy.Publisher('/safety', Bool, queue_size=2)
         self._left_endpoint_sub = rospy.Subscriber('/robot/limb/left/endpoint_state', EndpointState, self._left_endpoint_cb, queue_size=1)
         self._right_endpoint_sub = rospy.Subscriber('/robot/limb/right/endpoint_state', EndpointState, self._right_endpoint_cb, queue_size=1)
         self._jointstate_sub = rospy.Subscriber('/robot/joint_states', JointState, self._jointstate_cb, queue_size=1)
 
+        self._spin_rate_control = rospy.Rate(10)
         self._last_left_endpoint = None
         self._last_right_endpoint = None
         self._last_jointstate = None
+        self._kill_flag = False
+
         self._constraints = ["min", "max"]
+        self._coordinates = ['x', 'y', 'z']
+        self._orientations = ['x', 'y', 'z', 'w']
+        self._joints = ['left_s0','left_s1','left_e0','left_e1','left_w0','left_w1','left_w2',
+                        'right_s0','right_s1','right_e0','right_e1','right_w0','right_w1','right_w2']
 
     def _left_endpoint_cb(self, msg):
         self._last_left_endpoint = msg
@@ -53,7 +54,7 @@ class SafetyNode(object):
     def _jointstate_cb(self, msg):
         self._last_jointstate = msg
 
-    def _endpoint_constraints(self):
+    def _check_endpoints(self):
 
         if self._kill_flag:
             return
@@ -61,7 +62,8 @@ class SafetyNode(object):
         self._endpoints = {"left": self._last_left_endpoint, "right": self._last_right_endpoint}
         for side, endpoint in self._endpoints.items():
             if endpoint:
-                self._checks = {"endpoint_position": (self._coordinates, endpoint.pose.position), "endpoint_orientation": (self._orientations, endpoint.pose.orientation)}
+                self._checks = {"endpoint_position": (self._coordinates, endpoint.pose.position), \
+                                "endpoint_orientation": (self._orientations, endpoint.pose.orientation)}
                 for check, lists in self._checks.items():
                     for i in lists[0]:
                         for constraint in self._constraints:
@@ -72,7 +74,8 @@ class SafetyNode(object):
                             actual = getattr(lists[1], i)
                             limit = self._params[check][side][i][constraint]
                             if (actual > limit and constraint == "max") or (actual < limit and constraint == "min"):
-                                rospy.logerr("{} endpoint, coord: {}  {}: {}  {}: {}".format(side, i, check, getattr(lists[1], i), constraint, self._params[check][side][i][constraint]))
+                                rospy.logerr("{} endpoint, coord: {}  {}: {}  {}: {}".format(side, i, check, \
+                                             getattr(lists[1], i), constraint, self._params[check][side][i][constraint]))
                                 self._kill_flag = True	
                                 break
             else:
@@ -81,7 +84,7 @@ class SafetyNode(object):
         if self._kill_flag:
             rospy.logerr('SAFETY VIOLATED! ENDPOINT CONSTRAINT VIOLATED')
 
-    def _joint_constraints(self):
+    def _check_joints(self):
         
         if self._kill_flag:
             return
@@ -96,7 +99,8 @@ class SafetyNode(object):
                             continue
                         limit = self._params["joint_position"][jointstate.name[i]][constraint]
                         if (pos > limit and constraint == "max") or (pos < limit and constraint == "min"):
-                            rospy.logerr("Joint position, name: %s  pos: %s  %s: %s", jointstate.name[i], pos, constraint, self._params["joint_position"][jointstate.name[i]]["max"])
+                            rospy.logerr("Joint position, name: %s  pos: %s  %s: %s", jointstate.name[i], \
+                                         pos, constraint, self._params["joint_position"][jointstate.name[i]]["max"])
                             self._kill_flag = True
                             break
             # check if joint velocities are valid
@@ -105,7 +109,8 @@ class SafetyNode(object):
                     if not self._params["joint_velocity"][jointstate.name[i]]:
                         continue
                     if np.abs(vel) > self._params["joint_velocity"][jointstate.name[i]]:
-                        rospy.logerr("Joint, name: %s  vel: %s  max: %s", jointstate.name[i], np.abs(vel), self._params["joint_velocity"][jointstate.name[i]])
+                        rospy.logerr("Joint, name: %s  vel: %s  max: %s", jointstate.name[i], np.abs(vel), \
+                                     self._params["joint_velocity"][jointstate.name[i]])
                         self._kill_flag = True
         else:
             rospy.logwarn('SAFETY NOT RECEIVING JOINT INFORMATION')
@@ -113,24 +118,27 @@ class SafetyNode(object):
         if self._kill_flag:
             rospy.logerr('SAFETY VIOLATED! JOINT CONSTRAINT VIOLATED')
 
-    def _check_constraints(self):
-        self._endpoint_constraints()
-        self._joint_constraints()
-
     def spin(self):
         # Spin loop
         while not rospy.is_shutdown():
+
             # Step 1: Check constraints
-            self._check_constraints()
+            self._check_endpoints()
+            self._check_joints()
+
+            running = Bool()
+            running.data = not self._kill_flag
+            self._safety_pub.publish(running)
+
             # Step 2: Check if robot should kill
             if self._kill_flag:
                 self.kill()
                 rs.disable()
+
 	        # Sleep
             self._spin_rate_control.sleep()
 
     def kill(self):
-        # Send the kill commands
         self._estop_pub.publish()
 
 
@@ -140,13 +148,13 @@ if __name__ == '__main__':
     try:
         sn = SafetyNode()
         rs = RobotEnable()
-        rospy.loginfo("Safety Node Start Running")
+        rospy.loginfo("Safety Node Started")
         sn.spin()
     except Exception as e:
         # This shouldn't be happening. Estop just in case!!!
         r = rospy.Rate(10)
         rospy.logerr(e)
-        rospy.logerr("SAFETY MODULE HAVING EXCEPTIONS!!!!")
+        rospy.logerr("SAFETY MODULE HAVING EXCEPTIONS! ESTOP ACTIVATED")
         while not rospy.is_shutdown():
             estop_pub.publish()
             r.sleep()

@@ -1,14 +1,14 @@
-endpoint_orientation:
-  left:
-    w: {max: , min: }
-    x: {max: , min: }
-    y: {max: , min: }
-    z: {max: , min: }
-  right:
-    w: {max: , min: }
-    x: {max: , min: }
-    y: {max: , min: }
-    z: {max: , min: }
+# endpoint_orientation:
+#   left:
+#     w: {max: , min: }
+#     x: {max: , min: }
+#     y: {max: , min: }
+#     z: {max: , min: }
+#   right:
+#     w: {max: , min: }
+#     x: {max: , min: }
+#     y: {max: , min: }
+#     z: {max: , min: }
 endpoint_position:
   left:
     x: {max: 1, min: -0.4}

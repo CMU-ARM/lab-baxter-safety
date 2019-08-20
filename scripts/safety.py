@@ -5,35 +5,10 @@ import numpy as np
 import rospy
 import os
 import rospkg
-
-from std_msgs.msg import (
-    Empty
-)
-
-from baxter_core_msgs.msg import (
-    EndpointState
-)
-
-from sensor_msgs.msg import (
-    JointState
-)
+from std_msgs.msg import Empty, Bool
+from baxter_core_msgs.msg import EndpointState
+from sensor_msgs.msg import JointState
 from baxter_interface import RobotEnable
-
-
-# make sure we can find the package and yaml file locally
-rospack = rospkg.RosPack()
-path = os.path.join(rospack.get_path("lab_baxter_safety"), "parameters.yml")
-
-# parse parameters.yml file
-with open(path, 'r') as stream:
-    try:
-        params = yaml.load(stream)
-    except yaml.YAMLError as exc:
-	print(exc)
-
-_joints = ['left_s0','left_s1','left_e0','left_e1','left_w0','left_w1','left_w2','right_s0','right_s1','right_e0','right_e1','right_w0','right_w1','right_w2']
-_coordinates = ['x', 'y', 'z']
-_orientations = ['x', 'y', 'z', 'w']
 
 
 class SafetyNode(object):
@@ -41,18 +16,34 @@ class SafetyNode(object):
     # if these constratins are violated, the robot shuts down
 
     def __init__(self):
-        self._estop_pub = rospy.Publisher('/robot/set_super_stop', Empty,queue_size=2)
-        self._spin_rate = 10 
-        self._spin_rate_control = rospy.Rate(self._spin_rate)
-        self._kill_flag = False
+        # make sure we can find the package and yaml file locally
+        rospack = rospkg.RosPack()
+        path = os.path.join(rospack.get_path("lab_baxter_safety"), "parameters.yml")
 
+        # parse parameters.yml file
+        with open(path, 'r') as stream:
+            try:
+                self._params = yaml.load(stream, Loader=yaml.FullLoader)
+            except yaml.YAMLError as exc:
+                rospy.logerr(exc)
+
+        self._estop_pub = rospy.Publisher('/robot/set_super_stop', Empty, queue_size=2)
+        self._safety_pub = rospy.Publisher('/safety', Bool, queue_size=2)
         self._left_endpoint_sub = rospy.Subscriber('/robot/limb/left/endpoint_state', EndpointState, self._left_endpoint_cb, queue_size=1)
         self._right_endpoint_sub = rospy.Subscriber('/robot/limb/right/endpoint_state', EndpointState, self._right_endpoint_cb, queue_size=1)
         self._jointstate_sub = rospy.Subscriber('/robot/joint_states', JointState, self._jointstate_cb, queue_size=1)
 
+        self._spin_rate_control = rospy.Rate(10)
         self._last_left_endpoint = None
         self._last_right_endpoint = None
         self._last_jointstate = None
+        self._kill_flag = False
+
+        self._constraints = ["min", "max"]
+        self._coordinates = ['x', 'y', 'z']
+        self._orientations = ['x', 'y', 'z', 'w']
+        self._joints = ['left_s0','left_s1','left_e0','left_e1','left_w0','left_w1','left_w2',
+                        'right_s0','right_s1','right_e0','right_e1','right_w0','right_w1','right_w2']
 
     def _left_endpoint_cb(self, msg):
         self._last_left_endpoint = msg
@@ -63,221 +54,107 @@ class SafetyNode(object):
     def _jointstate_cb(self, msg):
         self._last_jointstate = msg
 
-    def _orientation_constraints(self):
-
-	if self._kill_flag:
-	    return
-
-	# check if left endpoint oreintation is valid
-	if self._last_left_endpoint != None:
-            left_orientation = self._last_left_endpoint.pose.orientation
-	    for i in _orientations:
-		# skip empty yaml file entries
-		if params["endpoint_orientation"]["left"][i]["max"] == None:
-		    continue
-		# compare values to max parameters
-	        if getattr(left_orientation, i) > params["endpoint_orientation"]["left"][i]["max"]:
-		    rospy.logerr("Left endpoint, coord: %s  orient: %s  max: %s", i, getattr(left_orientation, i), params["endpoint_orientation"]["left"][i]["max"])
-		    self._kill_flag = True	
-	    for j in _orientations:
-		# skip empty yaml file entries
-                if params["endpoint_orientation"]["left"][j]["min"] == None:
-                    continue
-		# compare values to min parameters
-                if getattr(left_orientation, j) < params["endpoint_orientation"]["left"][j]["min"]:
-                    rospy.logerr("Left endpoint, coord: %s  orient: %s  min: %s", j, getattr(left_orientation, j), params["endpoint_orientation"]["left"][j]["min"])
-                    self._kill_flag = True
-        else:
-            rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT ORIENTATION')
-
-        # check if right endpoint orientation is valid
-	if self._last_right_endpoint != None:
-	    right_orientation = self._last_right_endpoint.pose.orientation
-            for i in _orientations:
-		if params["endpoint_orientation"]["right"][i]["max"] == None:
-		    continue
-                if getattr(right_orientation, i) > params["endpoint_orientation"]["right"][i]["max"]:
-		    rospy.logerr("Right endpoint, coord: %s  orient: %s  max: %s", i, getattr(right_orientation, i), params["endpoint_orientation"]["right"][i]["max"])
-                    self._kill_flag = True	
-	    for j in _orientations:
-                if params["endpoint_orientation"]["right"][j]["min"] == None:
-                    continue
-                if getattr(right_orientation, j) < params["endpoint_orientation"]["right"][j]["min"]:
-                    rospy.logerr("Right endpoint, coord: %s  orient: %s  min: %s", j, getattr(right_orientation, j), params["endpoint_orientation"]["right"][j]["min"])
-                    self._kill_flag = True 
-        else:
-            rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT ORIENTATION')
+    def _check_endpoints(self):
 
         if self._kill_flag:
-            rospy.logerr('SAFETY VIOLATED! ORIENTATION VIOLATED')
+            return
 
-    def _position_constraints(self):
+        self._endpoints = {"left": self._last_left_endpoint, "right": self._last_right_endpoint}
+        for side, endpoint in self._endpoints.items():
+            if endpoint:
+                self._checks = {"endpoint_position": (self._coordinates, endpoint.pose.position), \
+                                "endpoint_orientation": (self._orientations, endpoint.pose.orientation)}
+                for check, lists in self._checks.items():
+                    for i in lists[0]:
+                        for constraint in self._constraints:
+                            # skip empty yaml file entries
+                            if not self._params[check][side][i][constraint]:
+                                continue
+                            # compare values to max parameters
+                            actual = getattr(lists[1], i)
+                            limit = self._params[check][side][i][constraint]
+                            if (actual > limit and constraint == "max") or (actual < limit and constraint == "min"):
+                                rospy.logerr("{} endpoint, coord: {}  {}: {}  {}: {}".format(side, i, check, \
+                                             getattr(lists[1], i), constraint, self._params[check][side][i][constraint]))
+                                self._kill_flag = True	
+                                break
+            else:
+                rospy.logdebug('SAFETY NOT RECEIVING ENDPOINT INFORMATION')
+
+        if self._kill_flag:
+            rospy.logerr('SAFETY VIOLATED! ENDPOINT CONSTRAINT VIOLATED')
+
+    def _check_joints(self):
         
         if self._kill_flag:
             return
 
-	# check if left endpoint position is valid
-        if self._last_left_endpoint != None:
-	    jointstate = self._last_jointstate
-	    left_position = self._last_left_endpoint.pose.position
-	    for i in _coordinates:
-		# skip empty yaml file entries
-		if params["endpoint_position"]["left"][i]["max"] == None:
-		    continue
-		# compare values to max parameters
-		if getattr(left_position, i) > params["endpoint_position"]["left"][i]["max"]:
-		    rospy.logerr("Left endpoint, coord: %s  pos: %s  max: %s", i, getattr(left_position, i), params["endpoint_position"]["left"][i]["max"])
-		    self._kill_flag = True
-	    for j in _coordinates:
-		# skip empty yaml file entries
-		if params["endpoint_position"]["left"][j]["min"] == None:
-                    continue
-		# compare values to min parameters
-                if getattr(left_position, j) < params["endpoint_position"]["left"][j]["min"]:
-                    rospy.logerr("Left endpoint, coord: %s  pos: %s  min: %s", j, getattr(left_position, j), params["endpoint_position"]["left"][j]["min"])
-                    self._kill_flag = True
-        else:
-            rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT POSITION')
-
-	# check if right endpoint position is valid
-        if self._last_right_endpoint != None:
-	    jointstate = self._last_jointstate
-            right_position = self._last_right_endpoint.pose.position
-            for i in _coordinates:
-		if params["endpoint_position"]["right"][i]["max"] == None:
-		    continue
-                if getattr(right_position, i) > params["endpoint_position"]["right"][i]["max"]:
-		    rospy.logerr("Right endpoint, coord: %s  pos: %s  max: %s", i, getattr(right_position, i), params["endpoint_position"]["right"][i]["max"])
-                    self._kill_flag = True
-	    for j in _coordinates:
-                if params["endpoint_position"]["right"][j]["min"] == None:
-                    continue
-                if getattr(right_position, j) < params["endpoint_position"]["right"][j]["min"]:
-                    rospy.logerr("Right endpoint, coord: %s  pos %s  min: %s", j, getattr(right_position, j), params["endpoint_position"]["right"][j]["min"])
-                    self._kill_flag = True  
-        else:
-            rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT POSITION')
-
-	# check if joint positions are valid
-        if self._last_jointstate != None:
+        if self._last_jointstate:
             jointstate = self._last_jointstate
+            # check if joint positions are valid
             for i, pos in enumerate(jointstate.position):
-                if jointstate.name[i] in _joints:
-		    if params["joint_position"][jointstate.name[i]]["max"] == None:
-			continue
-                    if pos > params["joint_position"][jointstate.name[i]]["max"]:
-                        rospy.logerr("Joint, name: %s  pos: %s  max: %s", jointstate.name[i], pos, params["joint_position"][jointstate.name[i]]["max"])
-                        self._kill_flag = True
-	    for j, pos in enumerate(jointstate.position):
-		if jointstate.name[j] in _joints:
-                    if params["joint_position"][jointstate.name[j]]["min"] == None:
-                        continue
-                    if pos < params["joint_position"][jointstate.name[j]]["min"]:
-                        rospy.logerr("Joint, name: %s  pos: %s  min: %s", jointstate.name[j], pos, params["joint_position"][jointstate.name[j]]["min"])
-                        self._kill_flag = True
-        else:
-            rospy.logwarn('SAFETY NOT RECEIVING JOINT POSITIONS')
-       
-	if self._kill_flag:
-            rospy.logerr('SAFETY VIOLATED! POSITION VIOLATED')
-
-    def _velocity_constraints(self):
-
-        if self._kill_flag:
-            return
-
-	# check if left endpoint velocity is valid
-	if self._last_left_endpoint != None:
-	    left_angular = self._last_left_endpoint.twist.angular
-	    for i in _coordinates:
-		# skip empty yaml file entries
-		if params["endpoint_velocity"]["left"]["angular"][i] == None:
-		    continue
-		# compare values to max angular parameters
-	    	if np.abs(getattr(left_angular, i)) > params["endpoint_velocity"]["left"]["angular"][i]:
-		    rospy.logerr("Left angular, coord: %s  vel: %s  max: %s", i, np.abs(getattr(left_angular, i)), params["endpoint_velocity"]["left"]["angular"][i])
-		    self._kill_flag = True
-            left_linear = self._last_left_endpoint.twist.linear
-            for j in _coordinates:
-		# skip empty yaml file entries
-		if params["endpoint_velocity"]["left"]["linear"][j] == None:
-		    continue
-		# compare values to max linear parameters
-                if np.abs(getattr(left_linear, j)) > params["endpoint_velocity"]["left"]["linear"][j]:
-		    rospy.logerr("Left linear, coord: %s  vel: %s  max: %s", j, np.abs(getattr(left_linear, j)), params["endpoint_velocity"]["left"]["linear"][j])
-                    self._kill_flag = True
-	else:
-            rospy.logwarn('SAFETY NOT RECEIVING LEFT ENDPOINT VELOCITY')
-	
-	# check if right endpoint velocity is valid
-        if self._last_right_endpoint != None:
-            right_angular = self._last_right_endpoint.twist.angular
-            for i in _coordinates:
-		if params["endpoint_velocity"]["right"]["angular"][i] == None:
-		    continue     
-		if np.abs(getattr(right_angular, i)) > params["endpoint_velocity"]["right"]["angular"][i]:
-		    rospy.logerr("Right angular, coord: %s  vel: %s  max: %s", i, np.abs(getattr(right_angular, i)), params["endpoint_velocity"]["right"]["angular"][i])
-                    self._kill_flag = True
-            right_linear = self._last_right_endpoint.twist.linear
-            for j in _coordinates:
-		if params["endpoint_velocity"]["right"]["linear"][j] == None:
-		    continue
-                if np.abs(getattr(right_linear, j)) > params["endpoint_velocity"]["right"]["linear"][j]:
-                    rospy.logerr("Right linear, coord: %s  vel: %s  max: %s", j, np.abs(getattr(right_linear, j)), params["endpoint_velocity"]["right"]["linear"][j])
-		    self._kill_flag = True
-	else:
-            rospy.logwarn('SAFETY NOT RECEIVING RIGHT ENDPOINT VELOCITY')
-		
-	# check if joint velocities are valid
-        if self._last_jointstate != None:
-            jointstate = self._last_jointstate
+                if jointstate.name[i] in self._joints:
+                    for constraint in self._constraints:
+                        if not self._params["joint_position"][jointstate.name[i]][constraint]:
+                            continue
+                        limit = self._params["joint_position"][jointstate.name[i]][constraint]
+                        if (pos > limit and constraint == "max") or (pos < limit and constraint == "min"):
+                            rospy.logerr("Joint position, name: %s  pos: %s  %s: %s", jointstate.name[i], \
+                                         pos, constraint, self._params["joint_position"][jointstate.name[i]]["max"])
+                            self._kill_flag = True
+                            break
+            # check if joint velocities are valid
             for i, vel in enumerate(jointstate.velocity):
-                if jointstate.name[i] in _joints:
-		    if params["joint_velocity"][jointstate.name[i]] == None:
-			continue
-                    if np.abs(vel) > params["joint_velocity"][jointstate.name[i]]:
-			rospy.logerr("Joint, name: %s  vel: %s  max: %s", jointstate.name[i], np.abs(vel), params["joint_velocity"][jointstate.name[i]])
+                if jointstate.name[i] in self._joints:
+                    if not self._params["joint_velocity"][jointstate.name[i]]:
+                        continue
+                    if np.abs(vel) > self._params["joint_velocity"][jointstate.name[i]]:
+                        rospy.logerr("Joint, name: %s  vel: %s  max: %s", jointstate.name[i], np.abs(vel), \
+                                     self._params["joint_velocity"][jointstate.name[i]])
                         self._kill_flag = True
         else:
-            rospy.logwarn('SAFETY NOT RECEIVING JOINT VELOCITIES')
+            rospy.logdebug('SAFETY NOT RECEIVING JOINT INFORMATION')
 
         if self._kill_flag:
-            rospy.logerr('SAFETY VIOLATED! VELOCITY VIOLATED')
-
-    def _check_constraints(self):
-	self._orientation_constraints()
-        self._position_constraints()
-        self._velocity_constraints()
+            rospy.logerr('SAFETY VIOLATED! JOINT CONSTRAINT VIOLATED')
 
     def spin(self):
-        # our spin loop
+        # Spin loop
         while not rospy.is_shutdown():
-            # Step 1: check constraints
-            self._check_constraints()
-            # Step 2: check if robot should kill
+
+            # Step 1: Check constraints
+            self._check_endpoints()
+            self._check_joints()
+
+            running = Bool()
+            running.data = not self._kill_flag
+            self._safety_pub.publish(running)
+
+            # Step 2: Check if robot should kill
             if self._kill_flag:
                 self.kill()
                 rs.disable()
-	        #return
-	    self._spin_rate_control.sleep()
+
+	        # Sleep
+            self._spin_rate_control.sleep()
 
     def kill(self):
-        # send the kill commands
         self._estop_pub.publish()
 
 
 if __name__ == '__main__':
     rospy.init_node('safety_node')
-    _estop_pub = rospy.Publisher('/robot/set_super_stop', Empty, queue_size=2)
+    estop_pub = rospy.Publisher('/robot/set_super_stop', Empty, queue_size=2)
     try:
         sn = SafetyNode()
-	rs = RobotEnable()
-        rospy.loginfo("Safety Node Start Running")
+        rs = RobotEnable()
+        rospy.loginfo("Safety Node Started")
         sn.spin()
-    except:
-        # seriously, this shouldn't be happening. estop just in case!!!
+    except Exception as e:
+        # This shouldn't be happening. Estop just in case!!!
         r = rospy.Rate(10)
-        rospy.logerr("UNKNOWN ERROR!!!! SAFETY MODULE HAVING EXCEPTIONS!!!!")
-        while True:
-            _estop_pub.publish()
+        rospy.logerr(e)
+        rospy.logerr("SAFETY MODULE HAVING EXCEPTIONS! ESTOP ACTIVATED")
+        while not rospy.is_shutdown():
+            estop_pub.publish()
             r.sleep()
